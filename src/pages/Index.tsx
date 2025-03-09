@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from "react";
+import { Search } from "lucide-react";
 
 interface Hacker {
   id: number;
@@ -7,6 +8,15 @@ interface Hacker {
   url: string;
   interests: string[];
   lastUpdated: string;
+}
+
+interface Project {
+  id: number;
+  title: string;
+  creator: string;
+  description: string;
+  dateCreated: string;
+  url: string;
 }
 
 const hackers: Hacker[] = [
@@ -68,10 +78,53 @@ const hackers: Hacker[] = [
   }
 ];
 
+const recentProjects: Project[] = [
+  {
+    id: 1,
+    title: "Distributed Neural Network Framework",
+    creator: "Alex Chen",
+    description: "Open-source framework for distributed neural network training",
+    dateCreated: "2023-12-10",
+    url: "https://github.com/alexchen/dist-neural-net"
+  },
+  {
+    id: 2,
+    title: "Privacy-Preserving ML",
+    creator: "Morgan Lee",
+    description: "Machine learning algorithms that protect user privacy",
+    dateCreated: "2023-11-25", 
+    url: "https://github.com/morganlee/private-ml"
+  },
+  {
+    id: 3,
+    title: "Decentralized Git Platform",
+    creator: "Jamie Garcia",
+    description: "Git-compatible version control system using blockchain tech",
+    dateCreated: "2023-12-02",
+    url: "https://github.com/jamieg/decentragit"
+  },
+  {
+    id: 4,
+    title: "Autonomous Drone Navigation",
+    creator: "Sam Rodriguez",
+    description: "Computer vision algorithms for drone obstacle avoidance",
+    dateCreated: "2023-10-30",
+    url: "https://github.com/samrodriguez/drone-nav"
+  }
+];
+
 const Index = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [visitorCount, setVisitorCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  const filteredHackers = hackers.filter(hacker => 
+    hacker.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    hacker.interests.some(interest => 
+      interest.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  );
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -127,29 +180,79 @@ const Index = () => {
             Click on a name to visit their site.
           </p>
           
+          <div className="mb-4 relative">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search by name or interest..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full py-2 px-3 pl-9 border border-gray-300 bg-gray-100 focus:bg-white focus:outline-none focus:border-blue-500"
+              />
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
+            </div>
+          </div>
+          
           <ul className="list-disc pl-6 space-y-4">
-            {hackers.map((hacker) => (
-              <li key={hacker.id} className="animate-fade-in" style={{ animationDelay: `${hacker.id * 100}ms` }}>
+            {filteredHackers.length === 0 ? (
+              <li className="text-gray-500 italic">No results found. Try a different search term.</li>
+            ) : (
+              filteredHackers.map((hacker) => (
+                <li key={hacker.id} className="animate-fade-in" style={{ animationDelay: `${hacker.id * 100}ms` }}>
+                  <a 
+                    href={hacker.url} 
+                    className="retro-link block group"
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                  >
+                    <div className="flex flex-col md:flex-row md:items-center justify-between">
+                      <div>
+                        <span className="text-base md:text-lg font-medium">{hacker.name}</span>
+                        <div className="flex gap-2 flex-wrap mt-1">
+                          {hacker.interests.map((interest, idx) => (
+                            <span key={idx} className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">
+                              {interest}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1 md:mt-0">
+                        Last updated: {hacker.lastUpdated}
+                      </div>
+                    </div>
+                  </a>
+                </li>
+              ))
+            )}
+          </ul>
+        </div>
+        
+        {/* Recent Projects Section */}
+        <div className="mb-6 p-4 border border-gray-300 bg-white shadow-sm">
+          <div className="mb-2">
+            <h2 className="text-lg md:text-xl font-pixel text-gray-800">
+              &lt;Recent Projects&gt;
+            </h2>
+          </div>
+          <p className="mb-4 text-sm">
+            Check out these recent projects from our hacker community.
+          </p>
+          
+          <ul className="list-disc pl-6 space-y-4">
+            {recentProjects.map((project) => (
+              <li key={project.id} className="animate-fade-in" style={{ animationDelay: `${project.id * 100}ms` }}>
                 <a 
-                  href={hacker.url} 
+                  href={project.url} 
                   className="retro-link block group"
                   target="_blank" 
                   rel="noopener noreferrer"
                 >
-                  <div className="flex flex-col md:flex-row md:items-center justify-between">
-                    <div>
-                      <span className="text-base md:text-lg font-medium">{hacker.name}</span>
-                      <div className="flex gap-2 flex-wrap mt-1">
-                        {hacker.interests.map((interest, idx) => (
-                          <span key={idx} className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">
-                            {interest}
-                          </span>
-                        ))}
-                      </div>
+                  <div>
+                    <span className="text-base md:text-lg font-medium">{project.title}</span>
+                    <div className="text-xs text-gray-500 mt-1">
+                      By {project.creator} • {project.dateCreated}
                     </div>
-                    <div className="text-xs text-gray-500 mt-1 md:mt-0">
-                      Last updated: {hacker.lastUpdated}
-                    </div>
+                    <p className="text-sm mt-1">{project.description}</p>
                   </div>
                 </a>
               </li>
@@ -173,7 +276,7 @@ const Index = () => {
               className="mr-2"
             />
             <img 
-              src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABYAAAAWCAYAAADEtGw7AAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAC4jAAAuIwF4pT92AAAAB3RJTUUH5QQXEg0gNICLKwAAA8RJREFUOMull11oW2UYx3/POZG2adKsXWPptmwa1K7dBnFeKIpQp9CPi+JNvRHBC724WAQRBbeLIl54J4IXgheC1wiCMEFxbMwp68f8GLS1tF2aNM2aNucceV+Pc3LS5GQ0+F8955z3fZ//83+e5/mfV9i2bXMbkm1OJpNhZHSU0VOn5i/aFpk/PyPIZrOMvfU209PTADjjcWLtbUzF/2L0hRfuDNyyLCYnJ7nw01m+PPEF1WoVx7Uh+dW3XxCqqmRyOS5dusT582MMbhl4TxgkYMzPE3/yKVZkJeSGKB17CQBtWaRe38Gm5jD+qiTz7l5OPjdEU1OT+4nDsmzWi+LJ57FGT5P9+DDhnZ0YHx7jwqYtxOoCRHyC+miU7Je/snrbXjraY2tD1zSU3kGCtTWkl1cQ6dxF4peDXPn+OPcte4HWaJS8UUEV4Pjkc8L1Hlo3RFdHeaqq0jc4RLC/n8TZk/QeeIW88FOdl7CrIFSPUKV8Sj54hImB3bRG69zXoYiivP7sMO07dzHx3UeYZ05jXL2MYVrEojF8TivFzA2SqQxCqeHAgX2EwyGnRu7itW2b4eFhKpUK3T3dFG7O89HBvXycqyMSDPDwlgdIvPk209PTtKxfT60/gGHoLi6I4pgxDJ3h4WHGx8fdnKDvHrr7HkOVAjM1Prrb2qhUKnx94hiamWR5aYlbt25xtq+T5lCQSt5iduYGZj5HsaDicxTLZDJs377dJVBTVbp6ehmfnqOYy3Luh8+JRqNEo1Gu/PIpp0ZOouk6QggUr4dAIEDPwf30bd2GLwDFQsHtEGdRBIMh1q5bR+qffzF0zd1cXVMp5NOoqkoul3OvAxAOR0gmk7z7ziEGBgbo7e3ln+vXWVxYoFAoOLVbL/H6AGohjzc8QENDAxOJBJOJhLtQCHGbJyNHCQQC5HJ5RkZGANA0jdXU7DLYwfGTpwhvfpiDhz9G8SqUS0VUTeP07ycJNjbS09NDoVDg5s0MlmWxbVsHiUQCwzCwLItcNksmk3ErpaqKm2hpacHv97O0tEQqlVoVxxMnTvDc0xcRK7FMJuOGLRQKkU6n3RIopZTrYw3x+Xy0tbXh8/kolUpomubC0+k0+XweRVGIRCLu4VjOm81mY5kAABf1SAUQQiCEwO/3Y5qmm1CzLJSHhoYYGBhgcHCQ1tbWNfDVh2M5z+97R0dHl2csgC2/oc97pOMdz44bHl+9FKCpqQlN09wJnkPm5GUymVwl7X28X/dxu1Z/TxRFoa6urj7yNTrx2M3/AwQo0lwMCBZ8AAAAAElFTkSuQmCC" 
+              src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABYAAAAWCAYAAADEtGw7AAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAC4jAAAuIwF4pT92AAAAB3RJTUUH5QQXEg0gNICLKwAAA8RJREFUOMull11oW2UYx3/POZG2adKsXWPptmwa1K7dBnFeKIpQp9CPi+JNvRHBC724WAQRBbeLIl54J4IXgjeC1wiCMEFxbMwp68f8GLS1tF2aNM2aNecceV+Pc3LS5GQ0+F8955z3fZ//83+e5/mfV9i2bXMbkm1OJpNhZHSU0VOn5i/aFpk/PyPIZrOMvfU209PTADjjcWLtbUzF/2L0hRfuDNyyLCYnJ7nw01m+PPEF1WoVx7Uh+dW3XxCqqmRyOS5dusT582MMbhl4TxgkYMzPE3/yKVZkJeSGKB17CQBtWaRe38Gm5jD+qiTz7l5OPjdEU1OT+4nDsmzWi+LJ57FGT5P9+DDhnZ0YHx7jwqYtxOoCRHyC+miU7Je/snrbXjraY2tD1zSU3kGCtTWkl1cQ6dxF4peDXPn+OPcte4HWaJS8UUEV4Pjkc8L1Hlo3RFdHeaqq0jc4RLC/n8TZk/QeeIW88FOdl7CrIFSPUKV8Sj54hImB3bRG69zXoYiivP7sMO07dzHx3UeYZ05jXL2MYVrEojF8TivFzA2SqQxCqeHAgX2EwyGnRu7itW2b4eFhKpUK3T3dFG7O89HBvXycqyMSDPDwlgdIvPk209PTtKxfT60/gGHoLi6I4pgxDJ3h4WHGx8fdnKDvHrr7HkOVAjM1Prrbhh5RAAAC70lEQVR18gGqRiOjEgkkKcWqaupWVYtFW7S1rTW7a8uuZbsV26q+L6J2q+hTjZjZkGZJCJmQADH9/HHvhJlJJmFeuu3nd+7lnu/cc7jnfPccFqVSiaWlJba3t6lUKnQ6HSRpz4NWq0W9Xn9kbnZ2FsuyeO655xgZGeHs2bMEg0HC4TDxeJxMJsPIyAgXLlwgGo0ONGztwePxsKff26OP07R/TKvf0EMwDBCgIikpuVRSekpKQdq7PnXy5J6HJVZ50u1lm3VucbmtsWKxgCzLewU9fPQYbreb5eVlpqenKRaLVCqVPZnY7ZimiWEYvPnmG7zyyss8/clTJD47wfT0RYpO1Ww+6HA46PV6XLp0Cd9jPtrLy1xeOsNFP6T9TtYGnzO+dJKLL/iJ+Lz0e31MBoXDWK2t+xJ/bnUhzpEtVZiauMhbXzWJ+L00VpdZWlmlWK3TbLWZW1hkdGiIhGrS6GmgmSA1qC5v73z/d6Xb7fLgwQPFVIv+7J/p9rYhXnntda5cu05ba9PVH9JQO/T1Lm+8+RZ/+OJ/8Pv2Pt7Uf/a5IrJrm83m/zY0TXOQYwBUVRVO9X1JkkgkEgSDQXw+H21F5r/XrhH0+9jY2GB9fYN6rU7A5yMSDDDkcxEJevC6VCTJgWyY9DstDNMCDkRCIe5NTdFQtjnzqVPY7XYkSVLkTdOk3W5TrVZRVXXXKIWR0RihUIhms0mlUuHixYsPPbLFvXv38Pl8xGIxDMNAkiT0nqHkDBVL66JrOs1Wa48RksSdO3eUGJnNZrHZbLRaLaSHMDQa9apALs5ZKpUKtVptUN/3l9zcXMb7+DHi8QQ+/xBWv41qKzSaDWqKs1htVh4/PspLY8/T7ffYWCsyk5ljfaMkqlLsIzd1tQT/AHcdWG6LxV/DAAAAAElFTkSuQmCC" 
               width="22" 
               height="22" 
               alt="Valid HTML 4.01"
