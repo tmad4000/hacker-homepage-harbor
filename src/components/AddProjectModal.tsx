@@ -1,7 +1,13 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { X } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+
+interface Hacker {
+  id: string;
+  name: string;
+}
 
 interface AddProjectModalProps {
   isOpen: boolean;
@@ -11,26 +17,77 @@ interface AddProjectModalProps {
     creator: string;
     description: string;
     url: string;
+    hacker_id: string;
   }) => void;
+  initialHackerId?: string;
+  initialHackerName?: string;
 }
 
 const AddProjectModal: React.FC<AddProjectModalProps> = ({
   isOpen,
   onClose,
   onAddProject,
+  initialHackerId,
+  initialHackerName,
 }) => {
   const [title, setTitle] = useState("");
-  const [creator, setCreator] = useState("");
+  const [selectedHackerId, setSelectedHackerId] = useState(initialHackerId || "");
   const [description, setDescription] = useState("");
-  const [url, setUrl] = useState("https://github.com/");
+  const [url, setUrl] = useState("");
+  const [hackers, setHackers] = useState<Hacker[]>([]);
   const { toast } = useToast();
+
+  // Fetch hackers for dropdown
+  useEffect(() => {
+    if (isOpen) {
+      const fetchHackers = async () => {
+        const { data, error } = await supabase
+          .from('hackers')
+          .select('id, name')
+          .order('name');
+          
+        if (error) {
+          console.error('Error fetching hackers:', error);
+          toast({
+            title: "Error",
+            description: "Failed to load hackers list",
+            variant: "destructive",
+          });
+        } else if (data) {
+          setHackers(data);
+          
+          // Set initial hacker if provided
+          if (initialHackerId) {
+            setSelectedHackerId(initialHackerId);
+          } else if (data.length > 0 && !selectedHackerId) {
+            setSelectedHackerId(data[0].id);
+          }
+        }
+      };
+      
+      fetchHackers();
+    }
+  }, [isOpen, initialHackerId, toast]);
+
+  // Reset form when modal is opened
+  useEffect(() => {
+    if (isOpen) {
+      setTitle("");
+      setDescription("");
+      setUrl("");
+      
+      if (initialHackerId) {
+        setSelectedHackerId(initialHackerId);
+      }
+    }
+  }, [isOpen, initialHackerId]);
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!title || !creator || !description || !url) {
+    if (!title || !selectedHackerId || !description || !url) {
       toast({
         title: "Missing information",
         description: "Please fill out all fields",
@@ -39,18 +96,35 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({
       return;
     }
 
+    // Format URL if needed (add https:// if no protocol specified)
+    let formattedUrl = url.trim();
+    if (formattedUrl && !formattedUrl.match(/^[a-zA-Z]+:\/\//)) {
+      formattedUrl = "https://" + formattedUrl;
+    }
+
+    // Find selected hacker name
+    const selectedHacker = hackers.find(h => h.id === selectedHackerId);
+    if (!selectedHacker) {
+      toast({
+        title: "Error",
+        description: "Selected hacker not found",
+        variant: "destructive",
+      });
+      return;
+    }
+
     onAddProject({
       title,
-      creator,
+      creator: selectedHacker.name,
       description,
-      url,
+      url: formattedUrl,
+      hacker_id: selectedHackerId,
     });
 
     // Reset form
     setTitle("");
-    setCreator("");
     setDescription("");
-    setUrl("https://github.com/");
+    setUrl("");
     onClose();
 
     toast({
@@ -87,13 +161,26 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({
           
           <div>
             <label className="block text-sm mb-1">Creator:</label>
-            <input
-              type="text"
-              value={creator}
-              onChange={(e) => setCreator(e.target.value)}
+            <select
+              value={selectedHackerId}
+              onChange={(e) => setSelectedHackerId(e.target.value)}
               className="w-full py-2 px-3 border border-gray-300 bg-gray-100 focus:bg-white focus:outline-none focus:border-blue-500"
-              placeholder="Your Name"
-            />
+              disabled={!!initialHackerName}
+            >
+              {!initialHackerName && (
+                <option value="" disabled>Select a hacker</option>
+              )}
+              {hackers.map((hacker) => (
+                <option key={hacker.id} value={hacker.id}>
+                  {hacker.name}
+                </option>
+              ))}
+            </select>
+            {initialHackerName && (
+              <p className="text-xs text-gray-500 mt-1">
+                This project will be added to {initialHackerName}'s profile
+              </p>
+            )}
           </div>
           
           <div>
@@ -110,11 +197,11 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({
           <div>
             <label className="block text-sm mb-1">Project URL:</label>
             <input
-              type="url"
+              type="text"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               className="w-full py-2 px-3 border border-gray-300 bg-gray-100 focus:bg-white focus:outline-none focus:border-blue-500"
-              placeholder="https://github.com/username/repo"
+              placeholder="github.com/username/repo"
             />
           </div>
           

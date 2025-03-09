@@ -54,9 +54,15 @@ const AddHackerModal: React.FC<AddHackerModalProps> = ({
       return;
     }
 
+    // Format URL if needed (add https:// if no protocol specified)
+    let formattedUrl = url.trim();
+    if (formattedUrl && !formattedUrl.match(/^[a-zA-Z]+:\/\//)) {
+      formattedUrl = "https://" + formattedUrl;
+    }
+
     onAddHacker({
       name,
-      url: url || null,
+      url: formattedUrl || null,
       interests,
       bio: bio || null,
     });
@@ -103,11 +109,11 @@ const AddHackerModal: React.FC<AddHackerModalProps> = ({
           <div>
             <label className="block text-sm mb-1">Homepage URL (optional):</label>
             <input
-              type="url"
+              type="text"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               className="w-full py-2 px-3 border border-gray-300 bg-gray-100 focus:bg-white focus:outline-none focus:border-blue-500"
-              placeholder="https://yourdomain.com"
+              placeholder="yourdomain.com"
             />
           </div>
           

@@ -242,15 +242,8 @@ const Index = () => {
     }
   };
 
-  const handleAddProject = async (newProject: { title: string; creator: string; description: string; url: string }) => {
+  const handleAddProject = async (newProject: { title: string; creator: string; description: string; url: string; hacker_id: string }) => {
     try {
-      const hacker = hackersData.find(h => h.name === newProject.creator);
-      
-      if (!hacker) {
-        toast.error('Creator not found in hackers list');
-        return;
-      }
-      
       const { data, error } = await supabase
         .from('projects')
         .insert({
@@ -258,7 +251,7 @@ const Index = () => {
           creator: newProject.creator,
           description: newProject.description,
           url: newProject.url,
-          hacker_id: hacker.id
+          hacker_id: newProject.hacker_id
         })
         .select();
         

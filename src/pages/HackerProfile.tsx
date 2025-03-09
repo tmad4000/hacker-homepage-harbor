@@ -1,9 +1,10 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, PlusCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import AddProjectModal from "@/components/AddProjectModal";
 
 interface Hacker {
   id: string;
@@ -29,6 +30,7 @@ const HackerProfile = () => {
   const [hacker, setHacker] = useState<Hacker | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showAddProjectModal, setShowAddProjectModal] = useState(false);
 
   useEffect(() => {
     const fetchHackerData = async () => {
@@ -82,6 +84,36 @@ const HackerProfile = () => {
       fetchHackerData();
     }
   }, [id]);
+
+  const handleAddProject = async (newProject: { title: string; creator: string; description: string; url: string; hacker_id: string }) => {
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .insert({
+          title: newProject.title,
+          creator: newProject.creator,
+          description: newProject.description,
+          url: newProject.url,
+          hacker_id: newProject.hacker_id
+        })
+        .select();
+        
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        const formattedProject = {
+          ...data[0],
+          date_created: new Date(data[0].date_created).toISOString().split('T')[0]
+        };
+        
+        setProjects([...projects, formattedProject]);
+        toast.success(`${newProject.title} has been added to projects`);
+      }
+    } catch (error) {
+      console.error('Error adding project:', error);
+      toast.error('Failed to add project');
+    }
+  };
 
   if (loading) {
     return (
@@ -160,9 +192,19 @@ const HackerProfile = () => {
               </div>
 
               {/* Projects Section */}
-              {projects.length > 0 ? (
-                <div className="mb-6">
-                  <h2 className="text-lg font-medium mb-2">Projects</h2>
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-lg font-medium">Projects</h2>
+                  <button 
+                    onClick={() => setShowAddProjectModal(true)}
+                    className="flex items-center px-2 py-1 bg-green-600 text-white hover:bg-green-700 text-xs rounded"
+                  >
+                    <PlusCircle className="h-3 w-3 mr-1" />
+                    Add Project
+                  </button>
+                </div>
+                
+                {projects.length > 0 ? (
                   <ul className="space-y-4">
                     {projects.map((project) => (
                       <li key={project.id} className="p-3 border border-gray-200 bg-gray-50">
@@ -179,13 +221,10 @@ const HackerProfile = () => {
                       </li>
                     ))}
                   </ul>
-                </div>
-              ) : (
-                <div className="mb-6">
-                  <h2 className="text-lg font-medium mb-2">Projects</h2>
+                ) : (
                   <p className="text-gray-600 italic">No projects found.</p>
-                </div>
-              )}
+                )}
+              </div>
 
               <div className="p-4 border border-gray-300 bg-gray-50">
                 <h2 className="text-lg font-medium mb-2">About</h2>
@@ -201,6 +240,14 @@ const HackerProfile = () => {
           </div>
         </div>
       </div>
+      
+      <AddProjectModal
+        isOpen={showAddProjectModal}
+        onClose={() => setShowAddProjectModal(false)}
+        onAddProject={handleAddProject}
+        initialHackerId={hacker.id}
+        initialHackerName={hacker.name}
+      />
     </div>
   );
 };
