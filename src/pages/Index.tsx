@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Search, PlusCircle } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -11,7 +10,7 @@ import { toast } from "sonner";
 interface Hacker {
   id: string;
   name: string;
-  url: string;
+  url: string | null;
   interests: string[];
   last_updated: string;
 }
@@ -26,6 +25,67 @@ interface Project {
   hacker_id: string;
 }
 
+const sampleHackers = [
+  {
+    name: "Ada Lovelace",
+    url: "https://ada-lovelace.dev",
+    interests: ["Algorithms", "Mathematical Engines", "Analytical Computation"]
+  },
+  {
+    name: "Grace Hopper",
+    url: "https://gracehopper.tech",
+    interests: ["Compilers", "Programming Languages", "COBOL"]
+  },
+  {
+    name: "Alan Turing",
+    url: "https://turingmachine.io",
+    interests: ["Cryptography", "Machine Learning", "Computational Theory"]
+  },
+  {
+    name: "Linus Torvalds",
+    url: "https://linux-kernel.org",
+    interests: ["Operating Systems", "Git", "Open Source"]
+  },
+  {
+    name: "Margaret Hamilton",
+    url: "https://moonlanding.space",
+    interests: ["Software Engineering", "Space Systems", "Error Prevention"]
+  }
+];
+
+const sampleProjects = [
+  {
+    title: "Analytical Engine Simulator",
+    creator: "Ada Lovelace",
+    description: "A modern implementation of Babbage's Analytical Engine with web interface",
+    url: "https://github.com/adalovelace/analytical-engine"
+  },
+  {
+    title: "FLOW-MATIC Revived",
+    creator: "Grace Hopper",
+    description: "Reimagining the first English-like data processing language",
+    url: "https://github.com/gracehopper/flow-matic"
+  },
+  {
+    title: "Turing Complete",
+    creator: "Alan Turing",
+    description: "A puzzle game teaching the fundamentals of computer architecture",
+    url: "https://github.com/alanturing/turing-complete"
+  },
+  {
+    title: "Git Internals Explorer",
+    creator: "Linus Torvalds",
+    description: "Visualize and understand how Git works under the hood",
+    url: "https://github.com/linustorvalds/git-explorer"
+  },
+  {
+    title: "Zero-Error Framework",
+    creator: "Margaret Hamilton",
+    description: "A modern framework inspired by NASA's mission-critical software principles",
+    url: "https://github.com/mhamilton/zero-error"
+  }
+];
+
 const Index = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [visitorCount, setVisitorCount] = useState<number | null>(null);
@@ -35,6 +95,7 @@ const Index = () => {
   const [projectsData, setProjectsData] = useState<Project[]>([]);
   const [showAddHackerModal, setShowAddHackerModal] = useState(false);
   const [showAddProjectModal, setShowAddProjectModal] = useState(false);
+  const [isPopulating, setIsPopulating] = useState(false);
   
   const findHackerIdByName = (name: string) => {
     const hacker = hackersData.find(h => h.name === name);
@@ -48,67 +109,114 @@ const Index = () => {
     )
   );
 
+  const populateSampleData = async () => {
+    setIsPopulating(true);
+    try {
+      await supabase.from('projects').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('hackers').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      
+      for (const hacker of sampleHackers) {
+        const { data, error } = await supabase
+          .from('hackers')
+          .insert({
+            name: hacker.name,
+            url: hacker.url,
+            interests: hacker.interests,
+          })
+          .select();
+          
+        if (error) throw error;
+      }
+      
+      const { data: hackers, error: hackersError } = await supabase
+        .from('hackers')
+        .select('*');
+        
+      if (hackersError) throw hackersError;
+      
+      for (const project of sampleProjects) {
+        const hacker = hackers.find(h => h.name === project.creator);
+        if (hacker) {
+          const { error } = await supabase
+            .from('projects')
+            .insert({
+              title: project.title,
+              creator: project.creator,
+              description: project.description,
+              url: project.url,
+              hacker_id: hacker.id
+            });
+            
+          if (error) throw error;
+        }
+      }
+      
+      fetchData();
+      toast.success('Sample data added successfully!');
+    } catch (error) {
+      console.error('Error adding sample data:', error);
+      toast.error('Failed to add sample data');
+    } finally {
+      setIsPopulating(false);
+    }
+  };
+
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
     
-    // Generate a random visitor count
     setTimeout(() => {
       const randomVisitorCount = Math.floor(Math.random() * 15000) + 10000;
       setVisitorCount(randomVisitorCount);
     }, 1200);
-    
-    // Fetch data from Supabase
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch hackers
-        const { data: hackers, error: hackersError } = await supabase
-          .from('hackers')
-          .select('*');
-          
-        if (hackersError) throw hackersError;
-        
-        // Fetch projects
-        const { data: projects, error: projectsError } = await supabase
-          .from('projects')
-          .select('*');
-          
-        if (projectsError) throw projectsError;
-        
-        // Format dates and set data
-        setHackersData(hackers.map(hacker => ({
-          ...hacker,
-          last_updated: new Date(hacker.last_updated).toISOString().split('T')[0]
-        })));
-        
-        setProjectsData(projects.map(project => ({
-          ...project,
-          date_created: new Date(project.date_created).toISOString().split('T')[0]
-        })));
-        
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        toast.error('Failed to load data');
-        setLoading(false);
-      }
-    };
     
     fetchData();
     
     return () => clearInterval(timer);
   }, []);
 
-  const handleAddHacker = async (newHacker: { name: string; url: string; interests: string[] }) => {
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      
+      const { data: hackers, error: hackersError } = await supabase
+        .from('hackers')
+        .select('*');
+        
+      if (hackersError) throw hackersError;
+      
+      const { data: projects, error: projectsError } = await supabase
+        .from('projects')
+        .select('*');
+        
+      if (projectsError) throw projectsError;
+      
+      setHackersData(hackers.map(hacker => ({
+        ...hacker,
+        last_updated: new Date(hacker.last_updated).toISOString().split('T')[0]
+      })));
+      
+      setProjectsData(projects.map(project => ({
+        ...project,
+        date_created: new Date(project.date_created).toISOString().split('T')[0]
+      })));
+      
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast.error('Failed to load data');
+      setLoading(false);
+    }
+  };
+
+  const handleAddHacker = async (newHacker: { name: string; url: string | null; interests: string[] }) => {
     try {
       const { data, error } = await supabase
         .from('hackers')
         .insert({
           name: newHacker.name,
-          url: newHacker.url,
+          url: newHacker.url || '',
           interests: newHacker.interests,
         })
         .select();
@@ -132,7 +240,6 @@ const Index = () => {
 
   const handleAddProject = async (newProject: { title: string; creator: string; description: string; url: string }) => {
     try {
-      // Find the hacker ID based on the creator name
       const hacker = hackersData.find(h => h.name === newProject.creator);
       
       if (!hacker) {
@@ -186,6 +293,15 @@ const Index = () => {
           <p className="text-sm md:text-base italic">
             A directory of personal homepages for Berkeley's hacker community
           </p>
+          {hackersData.length === 0 && !loading && (
+            <button 
+              onClick={populateSampleData} 
+              disabled={isPopulating}
+              className="mt-4 px-4 py-2 bg-green-600 text-white hover:bg-green-700 text-sm"
+            >
+              {isPopulating ? 'Adding Sample Data...' : 'Add Sample Data'}
+            </button>
+          )}
         </header>
         
         <div className="mb-6 p-4 border border-gray-300 bg-white shadow-sm">
@@ -250,15 +366,17 @@ const Index = () => {
                     </div>
                     <div className="text-xs text-gray-500 mt-1 md:mt-0 flex items-center">
                       <span className="mr-2">Last updated: {hacker.last_updated}</span>
-                      <a 
-                        href={hacker.url} 
-                        className="text-blue-600 hover:text-blue-800 text-sm"
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        Visit Site →
-                      </a>
+                      {hacker.url && (
+                        <a 
+                          href={hacker.url} 
+                          className="text-blue-600 hover:text-blue-800 text-sm"
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Visit Site →
+                        </a>
+                      )}
                     </div>
                   </div>
                 </li>
@@ -267,7 +385,6 @@ const Index = () => {
           </ul>
         </div>
         
-        {/* Recent Projects Section */}
         <div className="mb-6 p-4 border border-gray-300 bg-white shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-lg md:text-xl font-pixel text-gray-800">
@@ -344,14 +461,12 @@ const Index = () => {
         </div>
       </div>
       
-      {/* Add Hacker Modal */}
       <AddHackerModal 
         isOpen={showAddHackerModal}
         onClose={() => setShowAddHackerModal(false)}
         onAddHacker={handleAddHacker}
       />
       
-      {/* Add Project Modal */}
       <AddProjectModal
         isOpen={showAddProjectModal}
         onClose={() => setShowAddProjectModal(false)}

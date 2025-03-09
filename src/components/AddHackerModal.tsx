@@ -8,7 +8,7 @@ interface AddHackerModalProps {
   onClose: () => void;
   onAddHacker: (hacker: {
     name: string;
-    url: string;
+    url: string | null;
     interests: string[];
   }) => void;
 }
@@ -19,7 +19,7 @@ const AddHackerModal: React.FC<AddHackerModalProps> = ({
   onAddHacker,
 }) => {
   const [name, setName] = useState("");
-  const [url, setUrl] = useState("https://");
+  const [url, setUrl] = useState("");
   const [interestsInput, setInterestsInput] = useState("");
   const { toast } = useToast();
 
@@ -28,10 +28,10 @@ const AddHackerModal: React.FC<AddHackerModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name || !url) {
+    if (!name) {
       toast({
         title: "Missing information",
-        description: "Please provide both name and URL",
+        description: "Please provide a name",
         variant: "destructive",
       });
       return;
@@ -54,13 +54,13 @@ const AddHackerModal: React.FC<AddHackerModalProps> = ({
 
     onAddHacker({
       name,
-      url,
+      url: url || null,
       interests,
     });
 
     // Reset form
     setName("");
-    setUrl("https://");
+    setUrl("");
     setInterestsInput("");
     onClose();
 
@@ -97,7 +97,7 @@ const AddHackerModal: React.FC<AddHackerModalProps> = ({
           </div>
           
           <div>
-            <label className="block text-sm mb-1">Homepage URL:</label>
+            <label className="block text-sm mb-1">Homepage URL (optional):</label>
             <input
               type="url"
               value={url}
