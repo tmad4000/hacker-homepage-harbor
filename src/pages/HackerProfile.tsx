@@ -1,23 +1,25 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Hacker {
-  id: number;
+  id: string;
   name: string;
   url: string;
   interests: string[];
-  lastUpdated: string;
+  last_updated: string;
 }
 
 interface Project {
-  id: number;
+  id: string;
   title: string;
   creator: string;
   description: string;
-  dateCreated: string;
+  date_created: string;
   url: string;
+  hacker_id: string;
 }
 
 const HackerProfile = () => {
@@ -27,112 +29,56 @@ const HackerProfile = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // In a real app, this would be an API call
-    // For now, we'll use the same mock data from Index.tsx
-    const hackers: Hacker[] = [
-      {
-        id: 1,
-        name: "Alex Chen",
-        url: "https://alexchen.berkeley.edu",
-        interests: ["Quantum Computing", "Blockchain", "AI"],
-        lastUpdated: "2023-05-15"
-      },
-      {
-        id: 2, 
-        name: "Jordan Taylor",
-        url: "https://jtaylor.berkeley.edu",
-        interests: ["Cybersecurity", "Open Source", "Linux"],
-        lastUpdated: "2023-08-22"
-      },
-      {
-        id: 3,
-        name: "Sam Rodriguez",
-        url: "https://samrodriguez.berkeley.edu",
-        interests: ["Robotics", "Machine Learning", "IoT"],
-        lastUpdated: "2023-11-03"
-      },
-      {
-        id: 4,
-        name: "Morgan Lee",
-        url: "https://morganlee.berkeley.edu",
-        interests: ["Web3", "Distributed Systems", "Privacy"],
-        lastUpdated: "2023-09-18"
-      },
-      {
-        id: 5,
-        name: "Taylor Johnson",
-        url: "https://tjohnson.berkeley.edu",
-        interests: ["Game Development", "AR/VR", "Computer Graphics"],
-        lastUpdated: "2023-10-27"
-      },
-      {
-        id: 6,
-        name: "Casey Williams",
-        url: "https://caseyw.berkeley.edu",
-        interests: ["Mobile Development", "UX Design", "Accessibility"],
-        lastUpdated: "2023-07-14"
-      },
-      {
-        id: 7,
-        name: "Riley Patel",
-        url: "https://rpatel.berkeley.edu",
-        interests: ["Systems Programming", "Compilers", "Low-level Optimization"],
-        lastUpdated: "2023-12-05"
-      },
-      {
-        id: 8,
-        name: "Jamie Garcia",
-        url: "https://jamieg.berkeley.edu",
-        interests: ["Network Security", "Ethical Hacking", "Bug Bounty"],
-        lastUpdated: "2023-11-20"
+    const fetchHackerData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch hacker data
+        const { data: hackerData, error: hackerError } = await supabase
+          .from('hackers')
+          .select('*')
+          .eq('id', id)
+          .single();
+          
+        if (hackerError) throw hackerError;
+        
+        if (hackerData) {
+          const formattedHacker = {
+            ...hackerData,
+            last_updated: new Date(hackerData.last_updated).toISOString().split('T')[0]
+          };
+          
+          setHacker(formattedHacker);
+          
+          // Fetch projects for this hacker
+          const { data: projectsData, error: projectsError } = await supabase
+            .from('projects')
+            .select('*')
+            .eq('hacker_id', id);
+            
+          if (projectsError) throw projectsError;
+          
+          if (projectsData) {
+            const formattedProjects = projectsData.map(project => ({
+              ...project,
+              date_created: new Date(project.date_created).toISOString().split('T')[0]
+            }));
+            
+            setProjects(formattedProjects);
+          }
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching hacker data:', error);
+        toast.error('Failed to load hacker profile');
+        setLoading(false);
       }
-    ];
-
-    const recentProjects: Project[] = [
-      {
-        id: 1,
-        title: "Distributed Neural Network Framework",
-        creator: "Alex Chen",
-        description: "Open-source framework for distributed neural network training",
-        dateCreated: "2023-12-10",
-        url: "https://github.com/alexchen/dist-neural-net"
-      },
-      {
-        id: 2,
-        title: "Privacy-Preserving ML",
-        creator: "Morgan Lee",
-        description: "Machine learning algorithms that protect user privacy",
-        dateCreated: "2023-11-25", 
-        url: "https://github.com/morganlee/private-ml"
-      },
-      {
-        id: 3,
-        title: "Decentralized Git Platform",
-        creator: "Jamie Garcia",
-        description: "Git-compatible version control system using blockchain tech",
-        dateCreated: "2023-12-02",
-        url: "https://github.com/jamieg/decentragit"
-      },
-      {
-        id: 4,
-        title: "Autonomous Drone Navigation",
-        creator: "Sam Rodriguez",
-        description: "Computer vision algorithms for drone obstacle avoidance",
-        dateCreated: "2023-10-30",
-        url: "https://github.com/samrodriguez/drone-nav"
-      }
-    ];
-
-    const findHacker = hackers.find(h => h.id === Number(id));
-    setHacker(findHacker || null);
+    };
     
-    // Find projects created by this hacker
-    if (findHacker) {
-      const hackerProjects = recentProjects.filter(p => p.creator === findHacker.name);
-      setProjects(hackerProjects);
+    if (id) {
+      fetchHackerData();
     }
-    
-    setLoading(false);
   }, [id]);
 
   if (loading) {
@@ -195,7 +141,7 @@ const HackerProfile = () => {
               </p>
 
               <h2 className="text-lg font-medium mb-2">Last Updated</h2>
-              <p className="mb-4">{hacker.lastUpdated}</p>
+              <p className="mb-4">{hacker.last_updated}</p>
             </div>
 
             <div>
@@ -226,7 +172,7 @@ const HackerProfile = () => {
                         >
                           {project.title}
                         </a>
-                        <div className="text-sm text-gray-500 mt-1">{project.dateCreated}</div>
+                        <div className="text-sm text-gray-500 mt-1">{project.date_created}</div>
                         <p className="text-sm mt-1">{project.description}</p>
                       </li>
                     ))}

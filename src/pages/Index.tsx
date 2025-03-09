@@ -4,125 +4,34 @@ import { Link } from "react-router-dom";
 import AddHackerModal from "@/components/AddHackerModal";
 import AddProjectModal from "@/components/AddProjectModal";
 import { Toaster } from "@/components/ui/toaster";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Hacker {
-  id: number;
+  id: string;
   name: string;
   url: string;
   interests: string[];
-  lastUpdated: string;
+  last_updated: string;
 }
 
 interface Project {
-  id: number;
+  id: string;
   title: string;
   creator: string;
   description: string;
-  dateCreated: string;
+  date_created: string;
   url: string;
+  hacker_id: string;
 }
-
-const hackers: Hacker[] = [
-  {
-    id: 1,
-    name: "Alex Chen",
-    url: "https://alexchen.berkeley.edu",
-    interests: ["Quantum Computing", "Blockchain", "AI"],
-    lastUpdated: "2023-05-15"
-  },
-  {
-    id: 2, 
-    name: "Jordan Taylor",
-    url: "https://jtaylor.berkeley.edu",
-    interests: ["Cybersecurity", "Open Source", "Linux"],
-    lastUpdated: "2023-08-22"
-  },
-  {
-    id: 3,
-    name: "Sam Rodriguez",
-    url: "https://samrodriguez.berkeley.edu",
-    interests: ["Robotics", "Machine Learning", "IoT"],
-    lastUpdated: "2023-11-03"
-  },
-  {
-    id: 4,
-    name: "Morgan Lee",
-    url: "https://morganlee.berkeley.edu",
-    interests: ["Web3", "Distributed Systems", "Privacy"],
-    lastUpdated: "2023-09-18"
-  },
-  {
-    id: 5,
-    name: "Taylor Johnson",
-    url: "https://tjohnson.berkeley.edu",
-    interests: ["Game Development", "AR/VR", "Computer Graphics"],
-    lastUpdated: "2023-10-27"
-  },
-  {
-    id: 6,
-    name: "Casey Williams",
-    url: "https://caseyw.berkeley.edu",
-    interests: ["Mobile Development", "UX Design", "Accessibility"],
-    lastUpdated: "2023-07-14"
-  },
-  {
-    id: 7,
-    name: "Riley Patel",
-    url: "https://rpatel.berkeley.edu",
-    interests: ["Systems Programming", "Compilers", "Low-level Optimization"],
-    lastUpdated: "2023-12-05"
-  },
-  {
-    id: 8,
-    name: "Jamie Garcia",
-    url: "https://jamieg.berkeley.edu",
-    interests: ["Network Security", "Ethical Hacking", "Bug Bounty"],
-    lastUpdated: "2023-11-20"
-  }
-];
-
-const recentProjects: Project[] = [
-  {
-    id: 1,
-    title: "Distributed Neural Network Framework",
-    creator: "Alex Chen",
-    description: "Open-source framework for distributed neural network training",
-    dateCreated: "2023-12-10",
-    url: "https://github.com/alexchen/dist-neural-net"
-  },
-  {
-    id: 2,
-    title: "Privacy-Preserving ML",
-    creator: "Morgan Lee",
-    description: "Machine learning algorithms that protect user privacy",
-    dateCreated: "2023-11-25", 
-    url: "https://github.com/morganlee/private-ml"
-  },
-  {
-    id: 3,
-    title: "Decentralized Git Platform",
-    creator: "Jamie Garcia",
-    description: "Git-compatible version control system using blockchain tech",
-    dateCreated: "2023-12-02",
-    url: "https://github.com/jamieg/decentragit"
-  },
-  {
-    id: 4,
-    title: "Autonomous Drone Navigation",
-    creator: "Sam Rodriguez",
-    description: "Computer vision algorithms for drone obstacle avoidance",
-    dateCreated: "2023-10-30",
-    url: "https://github.com/samrodriguez/drone-nav"
-  }
-];
 
 const Index = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [visitorCount, setVisitorCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [hackersData, setHackersData] = useState<Hacker[]>(hackers);
-  const [projectsData, setProjectsData] = useState<Project[]>(recentProjects);
+  const [hackersData, setHackersData] = useState<Hacker[]>([]);
+  const [projectsData, setProjectsData] = useState<Project[]>([]);
   const [showAddHackerModal, setShowAddHackerModal] = useState(false);
   const [showAddProjectModal, setShowAddProjectModal] = useState(false);
   
@@ -143,40 +52,119 @@ const Index = () => {
       setCurrentTime(new Date());
     }, 1000);
     
-    // Simulate loading and getting visitor count from "server"
+    // Generate a random visitor count
     setTimeout(() => {
-      // Generate a random number between 10000 and 25000
       const randomVisitorCount = Math.floor(Math.random() * 15000) + 10000;
       setVisitorCount(randomVisitorCount);
-      setLoading(false);
     }, 1200);
+    
+    // Fetch data from Supabase
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch hackers
+        const { data: hackers, error: hackersError } = await supabase
+          .from('hackers')
+          .select('*');
+          
+        if (hackersError) throw hackersError;
+        
+        // Fetch projects
+        const { data: projects, error: projectsError } = await supabase
+          .from('projects')
+          .select('*');
+          
+        if (projectsError) throw projectsError;
+        
+        // Format dates and set data
+        setHackersData(hackers.map(hacker => ({
+          ...hacker,
+          last_updated: new Date(hacker.last_updated).toISOString().split('T')[0]
+        })));
+        
+        setProjectsData(projects.map(project => ({
+          ...project,
+          date_created: new Date(project.date_created).toISOString().split('T')[0]
+        })));
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast.error('Failed to load data');
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
     
     return () => clearInterval(timer);
   }, []);
 
-  const handleAddHacker = (newHacker: { name: string; url: string; interests: string[] }) => {
-    const formattedHacker: Hacker = {
-      id: hackersData.length > 0 ? Math.max(...hackersData.map(h => h.id)) + 1 : 1,
-      name: newHacker.name,
-      url: newHacker.url,
-      interests: newHacker.interests,
-      lastUpdated: new Date().toISOString().split('T')[0] // Format: YYYY-MM-DD
-    };
-    
-    setHackersData([...hackersData, formattedHacker]);
+  const handleAddHacker = async (newHacker: { name: string; url: string; interests: string[] }) => {
+    try {
+      const { data, error } = await supabase
+        .from('hackers')
+        .insert({
+          name: newHacker.name,
+          url: newHacker.url,
+          interests: newHacker.interests,
+        })
+        .select();
+        
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        const formattedHacker = {
+          ...data[0],
+          last_updated: new Date(data[0].last_updated).toISOString().split('T')[0]
+        };
+        
+        setHackersData([...hackersData, formattedHacker]);
+        toast.success(`${newHacker.name} has been added to the directory`);
+      }
+    } catch (error) {
+      console.error('Error adding hacker:', error);
+      toast.error('Failed to add hacker');
+    }
   };
 
-  const handleAddProject = (newProject: { title: string; creator: string; description: string; url: string }) => {
-    const formattedProject: Project = {
-      id: projectsData.length > 0 ? Math.max(...projectsData.map(p => p.id)) + 1 : 1,
-      title: newProject.title,
-      creator: newProject.creator,
-      description: newProject.description,
-      dateCreated: new Date().toISOString().split('T')[0], // Format: YYYY-MM-DD
-      url: newProject.url
-    };
-    
-    setProjectsData([...projectsData, formattedProject]);
+  const handleAddProject = async (newProject: { title: string; creator: string; description: string; url: string }) => {
+    try {
+      // Find the hacker ID based on the creator name
+      const hacker = hackersData.find(h => h.name === newProject.creator);
+      
+      if (!hacker) {
+        toast.error('Creator not found in hackers list');
+        return;
+      }
+      
+      const { data, error } = await supabase
+        .from('projects')
+        .insert({
+          title: newProject.title,
+          creator: newProject.creator,
+          description: newProject.description,
+          url: newProject.url,
+          hacker_id: hacker.id
+        })
+        .select();
+        
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        const formattedProject = {
+          ...data[0],
+          date_created: new Date(data[0].date_created).toISOString().split('T')[0]
+        };
+        
+        setProjectsData([...projectsData, formattedProject]);
+        toast.success(`${newProject.title} has been added to projects`);
+      }
+    } catch (error) {
+      console.error('Error adding project:', error);
+      toast.error('Failed to add project');
+    }
   };
   
   return (
@@ -260,7 +248,7 @@ const Index = () => {
                       </div>
                     </div>
                     <div className="text-xs text-gray-500 mt-1 md:mt-0 flex items-center">
-                      <span className="mr-2">Last updated: {hacker.lastUpdated}</span>
+                      <span className="mr-2">Last updated: {hacker.last_updated}</span>
                       <a 
                         href={hacker.url} 
                         className="text-blue-600 hover:text-blue-800 text-sm"
@@ -320,7 +308,7 @@ const Index = () => {
                     ) : (
                       <span>{project.creator}</span>
                     )}
-                    {" • "}{project.dateCreated}
+                    {" • "}{project.date_created}
                   </div>
                   <p className="text-sm mt-1">{project.description}</p>
                 </div>

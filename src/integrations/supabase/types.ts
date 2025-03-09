@@ -9,7 +9,68 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      hackers: {
+        Row: {
+          id: string
+          interests: string[]
+          last_updated: string | null
+          name: string
+          url: string
+        }
+        Insert: {
+          id?: string
+          interests: string[]
+          last_updated?: string | null
+          name: string
+          url: string
+        }
+        Update: {
+          id?: string
+          interests?: string[]
+          last_updated?: string | null
+          name?: string
+          url?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          creator: string
+          date_created: string | null
+          description: string
+          hacker_id: string
+          id: string
+          title: string
+          url: string
+        }
+        Insert: {
+          creator: string
+          date_created?: string | null
+          description: string
+          hacker_id: string
+          id?: string
+          title: string
+          url: string
+        }
+        Update: {
+          creator?: string
+          date_created?: string | null
+          description?: string
+          hacker_id?: string
+          id?: string
+          title?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_hacker_id_fkey"
+            columns: ["hacker_id"]
+            isOneToOne: false
+            referencedRelation: "hackers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
