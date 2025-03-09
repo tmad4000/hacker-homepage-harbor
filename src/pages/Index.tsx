@@ -90,7 +90,7 @@ const Index = () => {
   }, []);
   
   return (
-    <div className="min-h-screen bg-amber-50 text-gray-900 py-8 animate-fade-in">
+    <div className="min-h-screen bg-white text-gray-900 py-8 animate-fade-in">
       <div className="retro-container">
         <header className="text-center mb-10">
           <div className="inline-block bg-blue-700 text-white px-4 py-2 mb-4">
