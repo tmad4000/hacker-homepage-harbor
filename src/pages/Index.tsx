@@ -242,7 +242,7 @@ const Index = () => {
     }
   };
 
-  const handleAddProject = async (newProject: { title: string; creator: string; description: string; url: string; hacker_id: string }) => {
+  const handleAddProject = async (newProject: { title: string; creator: string; description: string; url: string; hacker_id: string | null }) => {
     try {
       const { data, error } = await supabase
         .from('projects')

@@ -17,7 +17,7 @@ interface AddProjectModalProps {
     creator: string;
     description: string;
     url: string;
-    hacker_id: string;
+    hacker_id: string | null;
   }) => void;
   initialHackerId?: string;
   initialHackerName?: string;
@@ -32,9 +32,13 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({
 }) => {
   const [title, setTitle] = useState("");
   const [selectedHackerId, setSelectedHackerId] = useState(initialHackerId || "");
+  const [creatorName, setCreatorName] = useState(initialHackerName || "");
   const [description, setDescription] = useState("");
   const [url, setUrl] = useState("");
   const [hackers, setHackers] = useState<Hacker[]>([]);
+  const [creatorMode, setCreatorMode] = useState<"existing" | "new">(
+    initialHackerId ? "existing" : "existing"
+  );
   const { toast } = useToast();
 
   // Fetch hackers for dropdown
@@ -59,6 +63,7 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({
           // Set initial hacker if provided
           if (initialHackerId) {
             setSelectedHackerId(initialHackerId);
+            setCreatorMode("existing");
           } else if (data.length > 0 && !selectedHackerId) {
             setSelectedHackerId(data[0].id);
           }
@@ -75,22 +80,44 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({
       setTitle("");
       setDescription("");
       setUrl("");
+      setCreatorName(initialHackerName || "");
       
       if (initialHackerId) {
         setSelectedHackerId(initialHackerId);
+        setCreatorMode("existing");
+      } else {
+        setCreatorMode("existing");
       }
     }
-  }, [isOpen, initialHackerId]);
+  }, [isOpen, initialHackerId, initialHackerName]);
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!title || !selectedHackerId || !description || !url) {
+    if (!title || !description || !url) {
       toast({
         title: "Missing information",
-        description: "Please fill out all fields",
+        description: "Please fill out all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (creatorMode === "existing" && !selectedHackerId) {
+      toast({
+        title: "Missing information",
+        description: "Please select a hacker",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (creatorMode === "new" && !creatorName) {
+      toast({
+        title: "Missing information",
+        description: "Please enter creator name",
         variant: "destructive",
       });
       return;
@@ -102,29 +129,40 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({
       formattedUrl = "https://" + formattedUrl;
     }
 
-    // Find selected hacker name
-    const selectedHacker = hackers.find(h => h.id === selectedHackerId);
-    if (!selectedHacker) {
-      toast({
-        title: "Error",
-        description: "Selected hacker not found",
-        variant: "destructive",
-      });
-      return;
+    let creator = "";
+    let hacker_id: string | null = null;
+
+    if (creatorMode === "existing") {
+      // Find selected hacker name
+      const selectedHacker = hackers.find(h => h.id === selectedHackerId);
+      if (!selectedHacker) {
+        toast({
+          title: "Error",
+          description: "Selected hacker not found",
+          variant: "destructive",
+        });
+        return;
+      }
+      creator = selectedHacker.name;
+      hacker_id = selectedHacker.id;
+    } else {
+      creator = creatorName;
+      hacker_id = null;
     }
 
     onAddProject({
       title,
-      creator: selectedHacker.name,
+      creator,
       description,
       url: formattedUrl,
-      hacker_id: selectedHackerId,
+      hacker_id,
     });
 
     // Reset form
     setTitle("");
     setDescription("");
     setUrl("");
+    setCreatorName("");
     onClose();
 
     toast({
@@ -161,21 +199,59 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({
           
           <div>
             <label className="block text-sm mb-1">Creator:</label>
-            <select
-              value={selectedHackerId}
-              onChange={(e) => setSelectedHackerId(e.target.value)}
-              className="w-full py-2 px-3 border border-gray-300 bg-gray-100 focus:bg-white focus:outline-none focus:border-blue-500"
-              disabled={!!initialHackerName}
-            >
-              {!initialHackerName && (
+            {!initialHackerId && (
+              <div className="mb-2">
+                <div className="flex space-x-4 mb-2">
+                  <label className="inline-flex items-center">
+                    <input
+                      type="radio"
+                      className="form-radio"
+                      name="creatorMode"
+                      checked={creatorMode === "existing"}
+                      onChange={() => setCreatorMode("existing")}
+                    />
+                    <span className="ml-2">Select existing hacker</span>
+                  </label>
+                  <label className="inline-flex items-center">
+                    <input
+                      type="radio"
+                      className="form-radio"
+                      name="creatorMode"
+                      checked={creatorMode === "new"}
+                      onChange={() => setCreatorMode("new")}
+                    />
+                    <span className="ml-2">Enter new creator</span>
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {creatorMode === "existing" && (
+              <select
+                value={selectedHackerId}
+                onChange={(e) => setSelectedHackerId(e.target.value)}
+                className="w-full py-2 px-3 border border-gray-300 bg-gray-100 focus:bg-white focus:outline-none focus:border-blue-500"
+                disabled={!!initialHackerName}
+              >
                 <option value="" disabled>Select a hacker</option>
-              )}
-              {hackers.map((hacker) => (
-                <option key={hacker.id} value={hacker.id}>
-                  {hacker.name}
-                </option>
-              ))}
-            </select>
+                {hackers.map((hacker) => (
+                  <option key={hacker.id} value={hacker.id}>
+                    {hacker.name}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {creatorMode === "new" && (
+              <input
+                type="text"
+                value={creatorName}
+                onChange={(e) => setCreatorName(e.target.value)}
+                className="w-full py-2 px-3 border border-gray-300 bg-gray-100 focus:bg-white focus:outline-none focus:border-blue-500"
+                placeholder="Creator Name"
+              />
+            )}
+
             {initialHackerName && (
               <p className="text-xs text-gray-500 mt-1">
                 This project will be added to {initialHackerName}'s profile
