@@ -11,6 +11,7 @@ export type Database = {
     Tables: {
       hackers: {
         Row: {
+          bio: string | null
           id: string
           interests: string[]
           last_updated: string | null
@@ -18,6 +19,7 @@ export type Database = {
           url: string
         }
         Insert: {
+          bio?: string | null
           id?: string
           interests: string[]
           last_updated?: string | null
@@ -25,6 +27,7 @@ export type Database = {
           url: string
         }
         Update: {
+          bio?: string | null
           id?: string
           interests?: string[]
           last_updated?: string | null

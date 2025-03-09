@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
@@ -9,6 +10,7 @@ interface Hacker {
   name: string;
   url: string;
   interests: string[];
+  bio: string | null;
   last_updated: string;
 }
 
@@ -187,9 +189,13 @@ const HackerProfile = () => {
 
               <div className="p-4 border border-gray-300 bg-gray-50">
                 <h2 className="text-lg font-medium mb-2">About</h2>
-                <p className="text-gray-600 italic">
-                  This hacker hasn't added a bio yet. Check back later!
-                </p>
+                {hacker.bio ? (
+                  <p className="text-gray-700">{hacker.bio}</p>
+                ) : (
+                  <p className="text-gray-600 italic">
+                    This hacker hasn't added a bio yet. Check back later!
+                  </p>
+                )}
               </div>
             </div>
           </div>
