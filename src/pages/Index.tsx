@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Search, PlusCircle } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -127,6 +126,11 @@ const Index = () => {
   const [showAddHackerModal, setShowAddHackerModal] = useState(false);
   const [showAddProjectModal, setShowAddProjectModal] = useState(false);
   
+  const findHackerIdByName = (name: string) => {
+    const hacker = hackersData.find(h => h.name === name);
+    return hacker ? hacker.id : null;
+  };
+
   const filteredHackers = hackersData.filter(hacker => 
     hacker.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     hacker.interests.some(interest => 
@@ -295,20 +299,31 @@ const Index = () => {
           <ul className="list-disc pl-6 space-y-4">
             {projectsData.map((project) => (
               <li key={project.id} className="animate-fade-in" style={{ animationDelay: `${project.id * 100}ms` }}>
-                <a 
-                  href={project.url} 
-                  className="retro-link block group"
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                >
-                  <div>
-                    <span className="text-base md:text-lg font-medium">{project.title}</span>
-                    <div className="text-xs text-gray-500 mt-1">
-                      By {project.creator} • {project.dateCreated}
-                    </div>
-                    <p className="text-sm mt-1">{project.description}</p>
+                <div>
+                  <a 
+                    href={project.url} 
+                    className="retro-link block group text-base md:text-lg font-medium"
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                  >
+                    {project.title}
+                  </a>
+                  <div className="text-xs text-gray-500 mt-1">
+                    By{" "}
+                    {findHackerIdByName(project.creator) ? (
+                      <Link
+                        to={`/hacker/${findHackerIdByName(project.creator)}`}
+                        className="hover:underline text-blue-600"
+                      >
+                        {project.creator}
+                      </Link>
+                    ) : (
+                      <span>{project.creator}</span>
+                    )}
+                    {" • "}{project.dateCreated}
                   </div>
-                </a>
+                  <p className="text-sm mt-1">{project.description}</p>
+                </div>
               </li>
             ))}
           </ul>

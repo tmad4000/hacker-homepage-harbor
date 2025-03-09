@@ -11,9 +11,19 @@ interface Hacker {
   lastUpdated: string;
 }
 
+interface Project {
+  id: number;
+  title: string;
+  creator: string;
+  description: string;
+  dateCreated: string;
+  url: string;
+}
+
 const HackerProfile = () => {
   const { id } = useParams<{ id: string }>();
   const [hacker, setHacker] = useState<Hacker | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -78,8 +88,50 @@ const HackerProfile = () => {
       }
     ];
 
+    const recentProjects: Project[] = [
+      {
+        id: 1,
+        title: "Distributed Neural Network Framework",
+        creator: "Alex Chen",
+        description: "Open-source framework for distributed neural network training",
+        dateCreated: "2023-12-10",
+        url: "https://github.com/alexchen/dist-neural-net"
+      },
+      {
+        id: 2,
+        title: "Privacy-Preserving ML",
+        creator: "Morgan Lee",
+        description: "Machine learning algorithms that protect user privacy",
+        dateCreated: "2023-11-25", 
+        url: "https://github.com/morganlee/private-ml"
+      },
+      {
+        id: 3,
+        title: "Decentralized Git Platform",
+        creator: "Jamie Garcia",
+        description: "Git-compatible version control system using blockchain tech",
+        dateCreated: "2023-12-02",
+        url: "https://github.com/jamieg/decentragit"
+      },
+      {
+        id: 4,
+        title: "Autonomous Drone Navigation",
+        creator: "Sam Rodriguez",
+        description: "Computer vision algorithms for drone obstacle avoidance",
+        dateCreated: "2023-10-30",
+        url: "https://github.com/samrodriguez/drone-nav"
+      }
+    ];
+
     const findHacker = hackers.find(h => h.id === Number(id));
     setHacker(findHacker || null);
+    
+    // Find projects created by this hacker
+    if (findHacker) {
+      const hackerProjects = recentProjects.filter(p => p.creator === findHacker.name);
+      setProjects(hackerProjects);
+    }
+    
     setLoading(false);
   }, [id]);
 
@@ -158,6 +210,34 @@ const HackerProfile = () => {
                   </span>
                 ))}
               </div>
+
+              {/* Projects Section */}
+              {projects.length > 0 ? (
+                <div className="mb-6">
+                  <h2 className="text-lg font-medium mb-2">Projects</h2>
+                  <ul className="space-y-4">
+                    {projects.map((project) => (
+                      <li key={project.id} className="p-3 border border-gray-200 bg-gray-50">
+                        <a 
+                          href={project.url} 
+                          className="font-medium text-blue-700 hover:underline block"
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                        >
+                          {project.title}
+                        </a>
+                        <div className="text-sm text-gray-500 mt-1">{project.dateCreated}</div>
+                        <p className="text-sm mt-1">{project.description}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <div className="mb-6">
+                  <h2 className="text-lg font-medium mb-2">Projects</h2>
+                  <p className="text-gray-600 italic">No projects found.</p>
+                </div>
+              )}
 
               <div className="p-4 border border-gray-300 bg-gray-50">
                 <h2 className="text-lg font-medium mb-2">About</h2>
