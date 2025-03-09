@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Search, PlusCircle } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -229,8 +230,8 @@ const Index = () => {
             {filteredHackers.length === 0 ? (
               <li className="text-gray-500 italic">No results found. Try a different search term.</li>
             ) : (
-              filteredHackers.map((hacker) => (
-                <li key={hacker.id} className="animate-fade-in" style={{ animationDelay: `${hacker.id * 100}ms` }}>
+              filteredHackers.map((hacker, index) => (
+                <li key={hacker.id} className="animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
                   <div className="flex flex-col md:flex-row md:items-center justify-between">
                     <div>
                       <Link 
@@ -285,8 +286,8 @@ const Index = () => {
           </p>
           
           <ul className="list-disc pl-6 space-y-4">
-            {projectsData.map((project) => (
-              <li key={project.id} className="animate-fade-in" style={{ animationDelay: `${project.id * 100}ms` }}>
+            {projectsData.map((project, index) => (
+              <li key={project.id} className="animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
                 <div>
                   <a 
                     href={project.url} 
