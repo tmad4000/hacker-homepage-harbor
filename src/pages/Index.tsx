@@ -26,6 +26,11 @@ interface Project {
   hacker_id: string;
 }
 
+interface Creator {
+  name: string;
+  hacker_id: string | null;
+}
+
 const sampleHackers = [
   {
     name: "Ada Lovelace",
@@ -242,30 +247,43 @@ const Index = () => {
     }
   };
 
-  const handleAddProject = async (newProject: { title: string; creator: string; description: string; url: string; hacker_id: string | null }) => {
+  const handleAddProject = async (newProject: { 
+    title: string; 
+    creators: Creator[]; 
+    description: string; 
+    url: string; 
+    hacker_ids: (string | null)[] 
+  }) => {
     try {
-      const { data, error } = await supabase
-        .from('projects')
-        .insert({
-          title: newProject.title,
-          creator: newProject.creator,
-          description: newProject.description,
-          url: newProject.url,
-          hacker_id: newProject.hacker_id
-        })
-        .select();
-        
-      if (error) throw error;
+      const projectEntries = [];
       
-      if (data && data.length > 0) {
-        const formattedProject = {
-          ...data[0],
-          date_created: new Date(data[0].date_created).toISOString().split('T')[0]
-        };
-        
-        setProjectsData([...projectsData, formattedProject]);
-        toast.success(`${newProject.title} has been added to projects`);
-      }
+      const projectPromises = newProject.creators.map(async (creator) => {
+        const { data, error } = await supabase
+          .from('projects')
+          .insert({
+            title: newProject.title,
+            creator: creator.name,
+            description: newProject.description,
+            url: newProject.url,
+            hacker_id: creator.hacker_id || null
+          })
+          .select();
+          
+        if (error) throw error;
+        return data && data.length > 0 ? data[0] : null;
+      });
+      
+      const results = await Promise.all(projectPromises);
+      
+      const newProjects = results
+        .filter(Boolean)
+        .map(project => ({
+          ...project!,
+          date_created: new Date(project!.date_created).toISOString().split('T')[0]
+        }));
+      
+      setProjectsData([...projectsData, ...newProjects]);
+      toast.success(`${newProject.title} has been added to projects`);
     } catch (error) {
       console.error('Error adding project:', error);
       toast.error('Failed to add project');

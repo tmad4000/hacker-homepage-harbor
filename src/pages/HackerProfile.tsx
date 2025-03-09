@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, PlusCircle } from "lucide-react";
@@ -23,6 +22,11 @@ interface Project {
   date_created: string;
   url: string;
   hacker_id: string;
+}
+
+interface Creator {
+  name: string;
+  hacker_id: string | null;
 }
 
 const HackerProfile = () => {
@@ -85,30 +89,56 @@ const HackerProfile = () => {
     }
   }, [id]);
 
-  const handleAddProject = async (newProject: { title: string; creator: string; description: string; url: string; hacker_id: string }) => {
+  const handleAddProject = async (newProject: { 
+    title: string; 
+    creators: Creator[]; 
+    description: string; 
+    url: string; 
+    hacker_ids: (string | null)[] 
+  }) => {
     try {
-      const { data, error } = await supabase
-        .from('projects')
-        .insert({
-          title: newProject.title,
-          creator: newProject.creator,
-          description: newProject.description,
-          url: newProject.url,
-          hacker_id: newProject.hacker_id
-        })
-        .select();
-        
-      if (error) throw error;
+      // For each creator that is associated with a hacker, create a project entry
+      const projectPromises = newProject.hacker_ids
+        .filter(Boolean) // Filter out null values
+        .map(async (hacker_id) => {
+          // Find the corresponding creator
+          const creator = newProject.creators.find(c => c.hacker_id === hacker_id);
+          
+          if (!creator) return null;
+          
+          const { data, error } = await supabase
+            .from('projects')
+            .insert({
+              title: newProject.title,
+              creator: creator.name,
+              description: newProject.description,
+              url: newProject.url,
+              hacker_id: hacker_id
+            })
+            .select();
+            
+          if (error) throw error;
+          return data && data.length > 0 ? data[0] : null;
+        });
       
-      if (data && data.length > 0) {
-        const formattedProject = {
-          ...data[0],
-          date_created: new Date(data[0].date_created).toISOString().split('T')[0]
-        };
-        
-        setProjects([...projects, formattedProject]);
-        toast.success(`${newProject.title} has been added to projects`);
+      // Wait for all inserts to complete
+      const results = await Promise.all(projectPromises);
+      
+      // Filter out null results and format dates
+      const newProjects = results
+        .filter(Boolean)
+        .map(project => ({
+          ...project!,
+          date_created: new Date(project!.date_created).toISOString().split('T')[0]
+        }));
+      
+      // Update local state if the current hacker is one of the creators
+      const currentHackerProject = newProjects.find(p => p.hacker_id === id);
+      if (currentHackerProject) {
+        setProjects([...projects, currentHackerProject]);
       }
+      
+      toast.success(`${newProject.title} has been added to projects`);
     } catch (error) {
       console.error('Error adding project:', error);
       toast.error('Failed to add project');
