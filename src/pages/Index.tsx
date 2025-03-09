@@ -116,16 +116,18 @@ const Index = () => {
       await supabase.from('hackers').delete().neq('id', '00000000-0000-0000-0000-000000000000');
       
       for (const hacker of sampleHackers) {
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('hackers')
           .insert({
             name: hacker.name,
             url: hacker.url,
             interests: hacker.interests,
-          })
-          .select();
+          });
           
-        if (error) throw error;
+        if (error) {
+          console.error("Error adding hacker:", error);
+          throw error;
+        }
       }
       
       const { data: hackers, error: hackersError } = await supabase
@@ -293,11 +295,12 @@ const Index = () => {
           <p className="text-sm md:text-base italic">
             A directory of personal homepages for Berkeley's hacker community
           </p>
+          
           {hackersData.length === 0 && !loading && (
             <button 
               onClick={populateSampleData} 
               disabled={isPopulating}
-              className="mt-4 px-4 py-2 bg-green-600 text-white hover:bg-green-700 text-sm"
+              className="mt-4 px-4 py-2 bg-green-600 text-white hover:bg-green-700 text-sm rounded"
             >
               {isPopulating ? 'Adding Sample Data...' : 'Add Sample Data'}
             </button>
