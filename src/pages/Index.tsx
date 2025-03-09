@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Search, PlusCircle } from "lucide-react";
+import { Link } from "react-router-dom";
 import AddHackerModal from "@/components/AddHackerModal";
 import AddProjectModal from "@/components/AddProjectModal";
 import { Toaster } from "@/components/ui/toaster";
@@ -209,7 +210,7 @@ const Index = () => {
           </div>
           <p className="mb-4 text-sm">
             Welcome to our old-school directory of Hackers at Berkeley personal homepages. 
-            Click on a name to visit their site.
+            Click on a name to view their profile or visit their site.
           </p>
           
           <div className="flex justify-between items-center mb-4">
@@ -238,28 +239,35 @@ const Index = () => {
             ) : (
               filteredHackers.map((hacker) => (
                 <li key={hacker.id} className="animate-fade-in" style={{ animationDelay: `${hacker.id * 100}ms` }}>
-                  <a 
-                    href={hacker.url} 
-                    className="retro-link block group"
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                  >
-                    <div className="flex flex-col md:flex-row md:items-center justify-between">
-                      <div>
-                        <span className="text-base md:text-lg font-medium">{hacker.name}</span>
-                        <div className="flex gap-2 flex-wrap mt-1">
-                          {hacker.interests.map((interest, idx) => (
-                            <span key={idx} className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">
-                              {interest}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1 md:mt-0">
-                        Last updated: {hacker.lastUpdated}
+                  <div className="flex flex-col md:flex-row md:items-center justify-between">
+                    <div>
+                      <Link 
+                        to={`/hacker/${hacker.id}`}
+                        className="text-base md:text-lg font-medium hover:text-blue-700 hover:underline"
+                      >
+                        {hacker.name}
+                      </Link>
+                      <div className="flex gap-2 flex-wrap mt-1">
+                        {hacker.interests.map((interest, idx) => (
+                          <span key={idx} className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">
+                            {interest}
+                          </span>
+                        ))}
                       </div>
                     </div>
-                  </a>
+                    <div className="text-xs text-gray-500 mt-1 md:mt-0 flex items-center">
+                      <span className="mr-2">Last updated: {hacker.lastUpdated}</span>
+                      <a 
+                        href={hacker.url} 
+                        className="text-blue-600 hover:text-blue-800 text-sm"
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Visit Site →
+                      </a>
+                    </div>
+                  </div>
                 </li>
               ))
             )}
