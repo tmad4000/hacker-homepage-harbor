@@ -13,6 +13,7 @@ interface Hacker {
   url: string | null;
   interests: string[];
   last_updated: string;
+  bio: string | null;
 }
 
 interface Project {
@@ -212,7 +213,7 @@ const Index = () => {
     }
   };
 
-  const handleAddHacker = async (newHacker: { name: string; url: string | null; interests: string[] }) => {
+  const handleAddHacker = async (newHacker: { name: string; url: string | null; interests: string[]; bio: string | null }) => {
     try {
       const { data, error } = await supabase
         .from('hackers')
@@ -220,6 +221,7 @@ const Index = () => {
           name: newHacker.name,
           url: newHacker.url || '',
           interests: newHacker.interests,
+          bio: newHacker.bio,
         })
         .select();
         

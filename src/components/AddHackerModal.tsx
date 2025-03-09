@@ -10,6 +10,7 @@ interface AddHackerModalProps {
     name: string;
     url: string | null;
     interests: string[];
+    bio: string | null;
   }) => void;
 }
 
@@ -21,6 +22,7 @@ const AddHackerModal: React.FC<AddHackerModalProps> = ({
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
   const [interestsInput, setInterestsInput] = useState("");
+  const [bio, setBio] = useState("");
   const { toast } = useToast();
 
   if (!isOpen) return null;
@@ -56,12 +58,14 @@ const AddHackerModal: React.FC<AddHackerModalProps> = ({
       name,
       url: url || null,
       interests,
+      bio: bio || null,
     });
 
     // Reset form
     setName("");
     setUrl("");
     setInterestsInput("");
+    setBio("");
     onClose();
 
     toast({
@@ -115,6 +119,17 @@ const AddHackerModal: React.FC<AddHackerModalProps> = ({
               onChange={(e) => setInterestsInput(e.target.value)}
               className="w-full py-2 px-3 border border-gray-300 bg-gray-100 focus:bg-white focus:outline-none focus:border-blue-500"
               placeholder="AI, Blockchain, Cybersecurity"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm mb-1">Bio (optional):</label>
+            <textarea
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              className="w-full py-2 px-3 border border-gray-300 bg-gray-100 focus:bg-white focus:outline-none focus:border-blue-500"
+              placeholder="Share a little about yourself..."
+              rows={4}
             />
           </div>
           
