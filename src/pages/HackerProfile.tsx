@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, PlusCircle } from "lucide-react";
@@ -21,7 +22,7 @@ interface Project {
   description: string;
   date_created: string;
   url: string;
-  hacker_id: string;
+  hacker_id: string | null;
 }
 
 interface Creator {
@@ -120,6 +121,22 @@ const HackerProfile = () => {
           if (error) throw error;
           return data && data.length > 0 ? data[0] : null;
         });
+      
+      // Handle non-hacker creators (custom names)
+      const customCreators = newProject.creators.filter(c => c.hacker_id === null);
+      for (const creator of customCreators) {
+        const { error } = await supabase
+          .from('projects')
+          .insert({
+            title: newProject.title,
+            creator: creator.name,
+            description: newProject.description,
+            url: newProject.url,
+            hacker_id: null
+          });
+          
+        if (error) throw error;
+      }
       
       // Wait for all inserts to complete
       const results = await Promise.all(projectPromises);

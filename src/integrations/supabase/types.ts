@@ -41,7 +41,7 @@ export type Database = {
           creator: string
           date_created: string | null
           description: string
-          hacker_id: string
+          hacker_id: string | null
           id: string
           title: string
           url: string
@@ -50,7 +50,7 @@ export type Database = {
           creator: string
           date_created?: string | null
           description: string
-          hacker_id: string
+          hacker_id?: string | null
           id?: string
           title: string
           url: string
@@ -59,7 +59,7 @@ export type Database = {
           creator?: string
           date_created?: string | null
           description?: string
-          hacker_id?: string
+          hacker_id?: string | null
           id?: string
           title?: string
           url?: string

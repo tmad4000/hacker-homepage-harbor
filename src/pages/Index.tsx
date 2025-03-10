@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Search, PlusCircle } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -23,7 +24,7 @@ interface Project {
   description: string;
   date_created: string;
   url: string;
-  hacker_id: string;
+  hacker_id: string | null;
 }
 
 interface Creator {
@@ -255,23 +256,40 @@ const Index = () => {
     hacker_ids: (string | null)[] 
   }) => {
     try {
-      const projectEntries = [];
+      // Handle creators with hacker profiles
+      const projectPromises = newProject.creators
+        .filter(creator => creator.hacker_id !== null)
+        .map(async (creator) => {
+          const { data, error } = await supabase
+            .from('projects')
+            .insert({
+              title: newProject.title,
+              creator: creator.name,
+              description: newProject.description,
+              url: newProject.url,
+              hacker_id: creator.hacker_id
+            })
+            .select();
+            
+          if (error) throw error;
+          return data && data.length > 0 ? data[0] : null;
+        });
       
-      const projectPromises = newProject.creators.map(async (creator) => {
-        const { data, error } = await supabase
+      // Handle creators without hacker profiles
+      const customCreators = newProject.creators.filter(creator => creator.hacker_id === null);
+      for (const creator of customCreators) {
+        const { error } = await supabase
           .from('projects')
           .insert({
             title: newProject.title,
             creator: creator.name,
             description: newProject.description,
             url: newProject.url,
-            hacker_id: creator.hacker_id || null
-          })
-          .select();
+            hacker_id: null
+          });
           
         if (error) throw error;
-        return data && data.length > 0 ? data[0] : null;
-      });
+      }
       
       const results = await Promise.all(projectPromises);
       
@@ -284,6 +302,9 @@ const Index = () => {
       
       setProjectsData([...projectsData, ...newProjects]);
       toast.success(`${newProject.title} has been added to projects`);
+      
+      // Refresh data to get all projects (including those with null hacker_id)
+      fetchData();
     } catch (error) {
       console.error('Error adding project:', error);
       toast.error('Failed to add project');
@@ -432,9 +453,9 @@ const Index = () => {
                   </a>
                   <div className="text-xs text-gray-500 mt-1">
                     By{" "}
-                    {findHackerIdByName(project.creator) ? (
+                    {project.hacker_id && findHackerIdByName(project.creator) ? (
                       <Link
-                        to={`/hacker/${findHackerIdByName(project.creator)}`}
+                        to={`/hacker/${project.hacker_id}`}
                         className="hover:underline text-blue-600"
                       >
                         {project.creator}
@@ -460,7 +481,7 @@ const Index = () => {
           </p>
           <div className="mt-2 inline-block">
             <img 
-              src="data:image/gif;base64,R0lGODlhVgAcALMAAAAAAP///3V1dWZmZlVVVf///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAAAAALAAAAAAWAB0AAAT/EMhJq7046827/2AojmRpnmiqrmzrvnAsz3Rt33iu73zv/8CgcEgsGo/IpHLJbDqf0Kh0Sq1ar9isdsvter/gsHhMLpvP6LR6zW673/C4fE6v2+/4vH7P7/v/gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8AXQQYMGPBFQQYHESZ0qFDDwoZF" 
+              src="data:image/gif;base64,R0lGODlhVgAcALMAAAAAAP///3V1dWZmZlVVVf///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAAAAALAAAAAAWAB0AAAT/EMhJq7046827/2AojmRpnmiqrmzrvnAsz3Rt33iu73zv/8CgcEgsGo/IpHLJbDqf0Kh0Sq1ar9isdsvter/gsHhMLpvP6LR6zW673/C4fE6v2+/4vH7P7/v/gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8AXQQYMGPBFQQYHESZ0qFDDwoZF" 
               width="86" 
               height="28" 
               alt="Best viewed with Netscape"
